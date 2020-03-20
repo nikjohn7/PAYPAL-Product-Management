@@ -72,6 +72,7 @@ security:
 | --- | --- |
 | EP001 | Revamp customer interactive chat |
 | EP002 | Add PayPal as payment option |
+
 .
 
 Each Epic contains User Stories associated with it, which are more detailed descriptions of the feature vaguely described in the Epic, and are assigned to a module.
