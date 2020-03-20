@@ -1,0 +1,2040 @@
+swagger: '2.0'
+info:
+  description: An API driven product management system to facilitate easy management, as well as retrieval and updation of relevant items 
+  version: 1.0.0
+  title: Genesys
+  contact:
+    email: nikhiljohnk@gmail.com
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+# Added by API Auto Mocking Plugin
+host: virtserver.swaggerhub.com
+basePath: /nikjohn7/Genesys/1.0.0
+
+securityDefinitions:
+  isRegistered:
+    # This scheme uses the header: "Authorization: Basic {base64 encoded string defined by username:password}"
+    # Scopes are not supported with this type of authorization.
+    type: basic
+
+  isProductTeam:
+    # This scheme uses the header: "X-Custom-Key: {base64 encoded string}"
+    # Scopes are not supported with this type of authorization.
+    type: apiKey
+    in: header
+    name: X-Custom-Key
+  hasRole:
+    # This scheme uses the header: "Authorization: Bearer {base64 encoded string representing a JWT}"
+    # Alternatively, the query param: "access_token" may be used.
+    #
+    # In this system, we must use the query param: "access_token" version in order to avoid passing several headers with key 'Authorization'
+    type: oauth2
+    # The flow and URLs in spec are for documentary purpose only
+    flow: accessCode
+    authorizationUrl: 'https://dummy.oauth.net/auth'
+    tokenUrl: 'https://dumy.oauth.net/token'
+    # Required scopes are passed by the runtime to the authorizer
+    scopes:
+      ProductManager: scope of Product Manager
+      Employee: scope of employees working under the Product Manager
+      Client: scope of added clients
+
+# Default Security requirements for all operations
+security:
+  - isRegistered: []
+
+
+tags:
+  - name: Backlog Details
+    description: Add, Fetch, Modify and Delete Epics and User Stories from the Product Backlog
+  - name: Category Details
+    description: Add, Fetch, Modify and Remove Categories
+  - name: Product Details
+    description: Add, Fetch, Modify and Remove Products
+  - name: Client Details
+    description: Add, Fetch, Modify and Remove Clients
+  - name: Search
+    description: Search the catalog for categories and products via various queries 
+  - name: costUtils
+    description: Fetch, set, calculate and more operations on prices
+  - name: Miscellaneous
+    description: Endpoints that have no concrete functionality, but have semantic relevance
+# schemes:
+#   - http
+produces:
+  - "application/json"
+
+paths:
+  /:
+    get:
+      tags:
+        - Miscellaneous
+      summary: Get a list of valid endpoints
+      description: An endpoint to fetch a list of all accessible endpoints
+      operationId: GetEndPointList
+      security: []
+      responses:
+        '200': 
+          description: List of all endpoints
+          schema:
+            type: object
+            properties:
+              listOfEndpoints:
+                type: array
+                items:
+                  type: string
+
+  /specSheet:
+    get:
+      tags:
+        - Miscellaneous
+      summary: Download a copy of the swagger spec sheet of this system 
+      description: Download a copy of the swagger spec sheet of this system for further development prospects
+      operationId: GetSwaggerSpecSheet
+      security: []
+      produces: 
+        - text/yaml
+      responses:
+        '200':
+          description: Returns yaml Swagger spec sheet
+          schema:
+            type: file
+
+  /backlog/epic:
+    get:
+      tags:
+        - Backlog Details
+      summary: View product Backlog
+      description: View all epics present in the Backlog
+      operationId: viewBacklog
+      security:
+        - isRegistered: []
+      responses:
+        '200':
+          description: Returns a JSON object with the array of all epics
+          schema:
+            type: object
+            properties:
+              AllEpics:
+                type: array
+                items: 
+                  $ref: '#/definitions/Epic'
+        '400':
+          description: An error while creating retrieving Backlog
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+    post:
+      tags:
+        - Backlog Details
+      summary: Add a new Epic
+      description: Add a new epic into the Backlog
+      operationId: addEpic
+      security:
+        - isRegistered: []
+      parameters:
+        - name: body
+          in: body
+          description: Details of the new Epic
+          required: true
+          schema:
+            $ref: '#/definitions/Epic'
+      responses:
+        '200':
+          description: Epic created successfully
+          schema: 
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error occurred while creating an Epic
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+    put:
+      tags:
+        - Backlog Details
+      summary: Update an Epic
+      description: Update an existing Epic (make sure the correct epicID is specified)
+      operationId: updateEpic
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: body
+          in: body
+          description: Details to be modified in the Epic
+          required: true
+          schema:
+            $ref: '#/definitions/Epic'
+      responses:
+        '200':
+          description: Epic has been successfully updated
+          schema: 
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error while updating the Epic
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+
+  /backlog/epic/{epicID}:
+    get:
+      tags:
+        - Backlog Details
+      summary: Get a particular Epic
+      description: Fetch all the details of a particular Epic by specifying it's unique ID
+      operationId: getEpic
+      security:
+        - isRegistered: []
+      parameters:
+        - name: epicID
+          in: path
+          description: Unique ID of the requested Epic
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Returns a JSON object with details of the requested Epic
+          schema:
+            $ref: '#/definitions/Epic'
+        '400':
+          description: A valid Epic ID was not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: The Epic ID entered does not exist
+          schema:
+            $ref: '#/definitions/MessageResponse'
+          
+    post:
+      tags:
+        - Backlog Details
+      summary: Add a new Epic via a form
+      description: Add a new Epic by specifying it's unique ID and info in a form
+      operationId: addEpicForm
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager, Employee]
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: epicID
+          in: path
+          description: Unique ID for the Epic
+          required: true
+          type: string
+        - name: Epic Message
+          in: formData
+          description: Overview of the feature that the Epic represents
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Epic created successfully
+          schema: 
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error occurred while creating an Epic
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+    delete:
+      tags:
+        - Backlog Details
+      summary: Delete an Epic from Backlog
+      description: Delete an existing Epic by specifying it's unique ID
+      operationId: deleteEpic
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: epicID
+          in: path
+          description: Unique ID for the Epic
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Epic deleted successfully
+          schema: 
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error occurred while deleting an Epic
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+
+  /backlog/epic/{epicID}/UserStories:
+    get:
+      tags:
+        - Backlog Details
+      summary: Retrieve all User Stories
+      description: View all User Stories associated with a particular Epic
+      operationId: viewUserStories
+      security:
+        - isRegistered: []
+      parameters:
+        - name: epicID
+          in: path
+          description: Unique ID for the Epic
+          required: true
+          type: string
+      responses:
+        '200':
+          description: User Stories retrieved successfully
+          schema:
+            type: object
+            properties:
+              AllStories:
+                type: array
+                items: 
+                  $ref: '#/definitions/UserStory'
+        '400':
+          description: An error while creating retrieving User Stories
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+          
+    post:
+      tags:
+        - Backlog Details
+      summary: Add a new User Story
+      description: Add a new User Story under a specific Epic
+      operationId: addUserStory
+      security:
+        - isRegistered: []
+      parameters:
+        - name: epicID
+          in: path
+          description: Unique ID of the Epic to be accessed
+          required: true
+          type: string
+
+        - name: body
+          in: body
+          description: Details of the new User Story
+          required: true
+          schema:
+            $ref: '#/definitions/UserStory'
+      responses:
+        '200':
+          description: User Story created successfully
+          schema: 
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error occurred while creating the User Story
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+    put:
+      tags:
+        - Backlog Details
+      summary: Update an User Story 
+      description: Update an existing User Story under a specific Epic (make sure the correct storyID and epicID is specified)
+      operationId: updateUserStory
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: epicID
+          in: path
+          description: Unique ID of the Epic to be accessed
+          required: true
+          type: string
+          
+        - name: body
+          in: body
+          description: Details to be modified in the UserStory
+          required: true
+          schema:
+            $ref: '#/definitions/UserStory'
+      responses:
+        '200':
+          description: User Story has been successfully updated
+          schema: 
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error occurred while updating the User Story
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /backlog/epic/{epicID}/UserStories/{storyID}:
+    get:
+      tags:
+        - Backlog Details
+      summary: Get a particular User Story 
+      description: Fetch all the details of a particular User Story by specifying it's unique ID and its parent Epic ID
+      operationId: getUserStory
+      security:
+        - isRegistered: []
+      parameters:
+        - name: storyID
+          in: path
+          description: Unique ID of the requested User Story
+          required: true
+          type: string
+
+        - name: epicID
+          in: path
+          description: Unique ID of the Epic under which the User Story is to be added
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Returns a JSON object with details of the requested User Story
+          schema:
+            $ref: '#/definitions/UserStory'
+        '400':
+          description: A valid Story ID was not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: The Story ID entered does not exist
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+          
+    post:
+      tags:
+        - Backlog Details
+      summary: Add a new User Story via a form
+      description: Add a new User Story by specifying it's unique ID, parent Epic ID and info in a form
+      operationId: addStoryForm
+      security:
+        - isRegistered: []
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: storyID
+          in: path
+          description: Unique ID of the User Story (with prefix "US")
+          required: true
+          type: string
+        - name: storyDetails
+          in: formData
+          description: Specific change/feature to ne implemented
+          required: true
+          type: string
+        - name: epicID
+          in: path
+          description: ID of the Epic to which this User Story belongs to (with prefix "EP")
+          required: true
+          type: string
+        - name: status
+          in: formData
+          description: The status of the User Story. By default when the User Story is created, the value is set to "Ready" 
+          type: string
+          default: Ready
+          enum:
+          - Ready
+          - Assigned
+          - In Progress
+          - Done
+          - Tested
+        - name: module
+          in: formData
+          description: The corresponding module/component which this User Story primarily affects
+          required: true
+          type: string
+          enum:
+          - API
+          - Database
+          - UI/UX
+          - Testing
+          - Analytics
+      responses:
+        '200':
+          description: User Story created successfully
+          schema: 
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error occurred while creating the User Story. Check if conditions for Unique IDs of Epic and User story is satisfied
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        
+    delete:
+      tags:
+        - Backlog Details
+      summary: Delete a User Story from Backlog
+      description: Delete an existing User Story by specifying it's storyID
+      operationId: deleteStory
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: storyID
+          in: path
+          description: Unique ID for the User Story to be deleted
+          required: true
+          type: string
+
+        - name: epicID
+          in: path
+          description: Unique ID of the Epic under which the User Story to be deleted is present
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Epic deleted successfully
+          schema: 
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error occurred while deleting an Epic. Check if storyID exists
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /backlog/module/{moduleName}:
+    get:
+      tags:
+        - Backlog Details
+      summary: Get all the User Stories associated with the specified module 
+      description: Fetch all the User Stories with the same module by specifying the module name
+      operationId: getModule
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager, Employee]
+      parameters:
+        - name: moduleName
+          in: path
+          description: Name of the module
+          required: true
+          type: string
+          enum:  
+          - API
+          - Database
+          - UI/UX
+          - Testing
+          - Analytics
+      responses:
+        '200':
+          description: User Stories under the specified module retrieved successfully
+          schema:
+            type: object
+            properties:
+              AllStories:
+                type: array
+                items: 
+                  $ref: '#/definitions/UserStory'
+        '400':
+          description: An error while creating retrieving User Stories
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: The module name entered does not exist
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        
+
+
+  /category:  
+    get:
+      tags:
+        - Category Details
+      summary: Get categories based on name
+      operationId: getCategoriesByName
+      security:
+        - isRegistered: []
+      consumes: 
+        - application/json
+      produces: 
+        - application/json
+      parameters:
+      - in: query
+        name: name
+        description: Name string that is used for searching for categories
+        type: string
+      responses:
+        '200':
+          description: A list of categories satisfying name search
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Category'
+        '400':
+          description: An error while creating retrieving products
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+    post:
+      tags:
+        - Category Details
+      summary: Add a new category
+      description: Add a new category of products to database
+      operationId: createCategory
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager, Employee]
+      parameters:
+        - name: body
+          in: body
+          description: Details of the new category
+          required: true
+          schema:
+            $ref: '#/definitions/Category'
+      responses:
+        '200':
+          description: Category was added successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error while creating new category
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+    put:
+      tags:
+        - Category Details
+      summary: Update an existing category
+      description: Request body must contain the category ID and the details to be updated. To remove parent from a category, set parentCategoryID to -1
+      operationId: updateCategory
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager, Employee]
+      parameters:
+        - name: body
+          in: body
+          description: Details of the category to be updated
+          required: true
+          schema:
+            $ref: '#/definitions/Category'
+      responses:
+        '200':
+          description: Category was updated successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error occurred with updating the category
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: No such category exists with the provided category ID
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /category/{categoryID}:
+    get:
+      tags:
+        - Category Details
+      summary: Get the details of a specific category
+      description: Fetch all the details of a category by specifying categoryID
+      operationId: GetCategory
+      security:
+        - isRegistered: []
+      parameters:
+        - name: categoryID
+          in: path
+          description: Unique ID of the requested category
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: Returns a JSON object with details of the category
+          schema:
+            $ref: '#/definitions/Category'
+        '400':
+          description: A valid category ID was not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: No such category exists with the provided category ID
+          schema:
+            $ref: '#/definitions/MessageResponse'
+    delete:
+      tags:
+        - Category Details
+      summary: Delete an existing category and all its subcategories
+      description: Remove a category and all its subcategories and the products associated with them 
+      operationId: deleteCategory
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: categoryID
+          in: path
+          description: Unique ID of the category to be deleted
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: Successfully deleted the category and all of its children
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: No such category exists with the provided category ID
+          schema:
+            $ref: '#/definitions/MessageResponse'
+    post:
+      tags: 
+        - Category Details
+      summary: Add a new category via a form
+      description: Creates a new category with the new categoryId specified in the path
+      operationId: createCategoryForm
+      security:
+            - isProductTeam: []
+              hasRole: [ProductManager, Employee]
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: categoryID
+          in: path
+          description: Unique ID for the Category
+          required: true
+          type: integer
+        - name: name
+          in: formData
+          description: Name of the Category
+          required: true
+          type: string
+        - name: parentCategoryID
+          in: formData
+          description: Category ID of its parent category. Leave blank if no parent
+          type: integer
+      responses:
+        '200':
+          description: Category was added successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error occurred while creating the new category
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /product:
+    get:
+      tags:
+        - Product Details
+      summary: "Get all products based on name"
+      operationId: "getProductsByName"
+      security:
+        - isRegistered: []
+          hasRole: [Client]
+        - isProductTeam: []
+          hasRole: [ProductManager, Employee]
+      consumes: 
+        - application/json
+      produces: 
+        - application/json
+      parameters:
+      - in: query
+        name: name
+        description: "Name string that is used for searching for products"
+        type: string
+      responses:
+        '200':
+          description: A list of products satisfying name search
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Category'
+        '400':
+          description: An error while creating retrieving products
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+    post:
+      tags:
+        - Product Details
+      summary: Add a new product
+      description: Add a new product to the database
+      operationId: createProduct
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager, Employee]
+      parameters:
+        - name: body
+          in: body
+          description: the details of the new product
+          required: true
+          schema:
+            $ref: '#/definitions/Product'
+      responses:
+        '200':
+          description: Product was added successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error while creating new product
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+    put:
+      tags:
+        - Product Details
+      summary: Update an existing product
+      description: Request body must contain the productSKU and other details to be updated
+      operationId: updateProduct
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager, Employee]
+      parameters:
+        - name: body
+          in: body
+          description: Details of the product to be updated 
+          required: true
+          schema:
+            $ref: '#/definitions/Product'
+      responses:
+        '200':
+          description: Product was updated successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error occurred with updating the product
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: No such product exists with the provided productSKU
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /product/{productSKU}:
+    get:
+      tags:
+        - Product Details
+      summary: Get the details of a product
+      description: Fetch all the details of a product whose productSKU is specified
+      operationId: getProduct
+      security:
+        - isRegistered: []
+          hasRole: [Client]
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: productSKU
+          in: path
+          description: SKU of the requested product
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Returns a JSON object with details of the respective product
+          schema:
+            $ref: '#/definitions/Product'
+        '400':
+          description: A valid productSKU was not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: No such product exists with the provided productSKU
+          schema:
+            $ref: '#/definitions/MessageResponse'
+    delete:
+      tags:
+        - Product Details
+      summary: Delete an existing product
+      description: Delete an existing product whose productSKU is specified
+      operationId: DeleteProduct
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: productSKU
+          in: path
+          description: productSKU of the product to be deleted
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Successfully deleted the product and all of its children
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: No such product exists with the provided productSKU
+          schema:
+            $ref: '#/definitions/MessageResponse'
+    post:
+      tags: 
+        - Product Details
+      summary: Add a new product via a form
+      description: Add a new product with specified productSKU via a form
+      operationId: createProductForm
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager, Employee]
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: productSKU
+          in: path
+          description: Unique ID for the product
+          required: true
+          type: string
+        - name: name
+          in: formData
+          description: Name of the Product
+          required: true
+          type: string
+        - name: categoryID
+          in: formData
+          description: ID of the category to which the product belongs
+          required: true
+          type: integer
+        - name: keywords
+          in: formData
+          description: An array of keywords to facilitate searching 
+          type: array
+          items: 
+            type: string
+        - name: brand
+          in: formData
+          description: Name of the brand
+          required: true
+          type: string
+        - name: color
+          in: formData
+          description: Color of the item
+          type: string
+        - name: Warranty
+          in: formData
+          description: Availability and duration of warranty
+          required: true
+          type: string
+          enum:
+            - 1 year
+            - 6 months
+            - 3 months
+            - None
+        - name: basePrice
+          in: formData
+          description: Base selling price of the item
+          required: true
+          type: number
+          minimum: 0
+        - name: taxCategoryID
+          in: formData
+          description: Tax Category ID for GST calculation
+          required: true
+          type: integer
+        - name: imageURLs
+          in: formData
+          description: An array of URLs where the images of the product are hosted
+          type: array
+          items:
+            type: string
+        - name: stock
+          in: formData
+          description: The number of items currently available in stock
+          type: integer
+          minimum: 0
+        - name: status
+          in: formData
+          description: Current status of the product (if available for purchasing)
+          type: string
+          enum:
+            - live
+            - pending
+            - draft
+      responses:
+        '200':
+          description: Product was added successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error while creating new product
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+
+  /clients:
+    get:
+      tags:
+      - Client Details
+      summary: Fetch the list of Clients/Businesses
+      description: Fetch a list of all Clients in the database 
+      operationId: GetClients
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - in: query
+          name: limit
+          type: integer
+          description: The numbers of items to return '?limit=10'
+        - in: query
+          name: name
+          description: Filter by name attribute of object '?name=Nintendo'
+          type: string
+
+      responses:
+        '200':
+          description: Returns a JSON object with the array of all clients
+          schema:
+            type: object
+            properties:
+              AllClients:
+                type: array
+                items: 
+                  $ref: '#/definitions/Client'
+        '400':
+          description: An error while retrieving Clients
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+      
+    post:
+      tags:
+      - Client Details
+      summary: Add a new Client
+      description: Add a new Client/Business to database
+      operationId: CreateClient
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: body
+          in: body
+          description: Details of the new Client
+          required: true
+          schema:
+            $ref: '#/definitions/Client'
+      responses:
+        '200':
+          description: Client was added successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: An error while adding the Client
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+      
+  /clients/{clientID}:
+    get:
+      tags:
+      - Client Details
+      summary: Get the details of a Client
+      description: Fetch all the details of a Client via the specified clientID
+      operationId: getClient
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: clientID
+          in: path
+          description: Unique Id of the Client
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Returns a JSON object with details of the requested Client
+          schema:
+            $ref: '#/definitions/Client'
+        '400':
+          description: A valid Client ID was not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: The Client ID entered does not exist
+          schema:
+            $ref: '#/definitions/MessageResponse'
+          
+    put:
+      tags:
+      - Client Details
+      summary: Update an existing Client's details
+      description: Request body must contain the clientID and details to be updated
+      operationId: UpdateClient
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      consumes:
+        - application/json
+      parameters:
+        - name: clientID
+          in: path
+          description: Unique Id of the Client
+          required: true
+          type: string
+        - in: body
+          name: Client details
+          description: The Client details to be updated
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              email:
+                type: string
+      responses:
+        '200':
+          description: Client details were updated successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: A valid Client ID was not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: The Client ID entered does not exist
+          schema:
+            $ref: '#/definitions/MessageResponse'
+                
+    delete:
+      tags:
+      - Client Details
+      summary: Delete an existing Client
+      description: Delete an existing Client/Business from database
+      operationId: DeleteClient
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: clientID
+          in: path
+          description: Unique Id of the Client
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Client was deleted successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: A valid Client ID was not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: The Client ID entered does not exist
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /category/{categoryID}/getSubCategories:
+    get:
+      tags:
+        - Search
+      summary: Get sub categories of a category
+      description: Get a list of all immediate child categories for a given category
+      operationId: getSubCategories
+      security:
+        - isRegistered: []
+      parameters:
+        - name: categoryID
+          in: path
+          description: categoryID of the parent category
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: Returns a list of all subcategories
+          schema:
+            type: object
+            properties:
+              subCategories:
+                type: array
+                items: 
+                  $ref: '#/definitions/Category'
+        '400':
+          description: A valid categoryID was not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: No such category exists with the provided categoryID
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /category/{categoryID}/getProducts:
+    get:
+      tags:
+        - Search
+      summary: Get all products in a category
+      description: Get a list of all products associated with a category
+      operationId: GetProductsInCategory
+      security:
+        - isRegistered: []
+      parameters:
+        - name: categoryID
+          in: path
+          description: categoryID of the required category
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: Returns a list of all products in the category
+          schema:
+            type: object
+            properties:
+              products:
+                type: array
+                items: 
+                  $ref: '#/definitions/Product'
+        '400':
+          description: A valid categoryID was not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: No such category exists with the provided categoryID
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /product/{productSKU}/getSimilar:
+    get:
+      tags:
+        - Search
+      summary: Get similar products
+      description: Get a list of all products similar to the specified product
+      operationId: GetSimilarProducts
+      security:
+        - isRegistered: []
+      parameters:
+        - name: productSKU
+          in: path
+          description: SKU of the query product
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Returns a list of all similar products
+          schema:
+            type: object
+            properties:
+              products:
+                type: array
+                items: 
+                  $ref: '#/definitions/Product'
+        '400':
+          description: A valid productSKU was not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: No such product exists with the provided productSKU
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /catalog/searchProducts:
+    post:
+      tags:
+        - Search
+      summary: Get products by specifying various filters
+      description: Get a list of all products after applying one or more filters on them
+      operationId: GetProductsByFilter
+      security:
+        - isRegistered: []
+      parameters:
+        - name: filterBody
+          in: body
+          description: Mention the names of various filters (if nothing entered then all product are displayed)
+          schema:
+            $ref: '#/definitions/ProductFilter'
+      responses:
+        '200':
+          description: Returns a list of matching products
+          schema:
+            type: object
+            properties:
+              products:
+                type: array
+                items: 
+                  $ref: '#/definitions/Product'
+        '400':
+          description: Valid parameters were not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /catalog/productFilters:
+    get:
+      tags:
+        - Search
+      summary: Get all filterable attributes of products
+      description: Set the query parameter as "Yes" for an attribute to view all items in that attribute that a product can be filtered by
+      operationId: GetProductFilters
+      security:
+        - isRegistered: []
+      parameters:
+        - in: query
+          name: keywords
+          description: Enter "Yes" if you want to view all keywords by which a product can be filtered
+          type: string
+          default: No
+          enum:
+            - Yes
+            - No
+        - in: query
+          name: brand
+          description: Enter "Yes" if you want to view all brands by which a product can be filtered
+          type: string
+          default: No
+          enum:
+            - Yes
+            - No
+        - in: query
+          name: color
+          description: Enter "Yes" if you want to view all colors by which a product can be filtered
+          type: string
+          default: No
+          enum:
+            - Yes
+            - No
+        - in: query
+          name: Warranty
+          description: Enter "Yes" if you want to view all Warranty periods by which a product can be filtered
+          type: string
+          default: No
+          enum:
+            - Yes
+            - No
+        - in: query
+          name: status
+          description: Enter "Yes" if you want to view all statuses by which a product can be filtered
+          type: string
+          default: No
+          enum:
+            - Yes
+            - No
+      responses:
+        '200':
+          description: Returns a JSON object with Arrays of all items in various attributes
+          schema: 
+            $ref: '#/definitions/ProductFilter'
+        '400':
+          description: Valid parameters were not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /utils/taxRates:
+    get:
+      tags:
+        - costUtils
+      summary: Get the current implemented tax rates
+      description: Get a dictionary of tax category IDs and their corresponding tax rate
+      operationId: GetTaxRates
+      security:
+        - isRegistered: []
+      responses:
+        '200':
+          description: Returns the currently implemented tax categories and corresponding rates
+          schema:
+            type: object
+            additionalProperties:
+              type: number
+    put:
+      tags:
+        - costUtils
+      summary: Change currently implemented tax rates
+      description: Change the implemented tax rates by passing an object with key as tax category ID and value as new rate
+      operationId: SetTaxRates
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: body
+          in: body
+          description: New tax rates
+          required: true
+          schema:
+            type: object
+            additionalProperties:
+              type: number
+      responses:
+        '200':
+          description: Tax rates were updated successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: Valid parameters were not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /utils/discounts:
+    get:
+      tags:
+        - costUtils
+      summary: Get all active discounts on products
+      description: Gets a dictionary of all discount rates on all products
+      operationId: GetDiscounts
+      security:
+        - isRegistered: []
+      responses:
+        '200':
+          description: Returns a dictionary of productSKU values and discount rates
+          schema:
+            type: object
+            additionalProperties:
+              type: number
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+    put:
+      tags:
+        - costUtils
+      summary: Add or change a discount on a product
+      description: Adds or changes a discount on a product referenced via its SKU
+      operationId: AddDiscount
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: body
+          in: body
+          description: New discount rates
+          required: true
+          schema:
+            type: object
+            properties:
+              productSKU:
+                type: string
+              discountRate:
+                type: number
+      responses:
+        '200':
+          description: Discount was added successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: Valid parameters were not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404': 
+          description: No such product exists with the provided productSKU
+          schema:
+              $ref: '#/definitions/MessageResponse' 
+
+  /utils/discounts/{productSKU}:
+    delete:
+      tags:
+        - costUtils
+      summary: Remove discount from a product
+      description: Remove any discount on a product, referenced by its SKU
+      operationId: DeleteDiscount
+      security:
+        - isProductTeam: []
+          hasRole: [ProductManager]
+      parameters:
+        - name: productSKU
+          in: path
+          description: productSKU of the product to remove discount from
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Discount was added successfully
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '400':
+          description: Valid parameters were not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '404':
+          description: No such product exists with the provided productSKU
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /utils/calculateFinalPrice:
+    post:
+      tags:
+        - costUtils
+      summary: Calculate final prices
+      description: Calculate the final prices of products, factoring in discounts and taxes. It accepts a list of productSKUs and gives a breakdown of the price calculation
+      operationId: CalculatePrices
+      security:
+        - isRegistered: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema: 
+            type: object
+            properties:
+              productSKUs:
+                type: array
+                items: 
+                  type: string
+      responses:
+        '200': 
+          description: Returns a dictionary of priceBreakdowns
+          schema:
+            type: object
+            additionalProperties:
+                $ref: '#/definitions/PriceBreakdown'
+        '400':
+          description: Valid parameters were not sent along with the request
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '401':
+          description: Authentication failed due to invalid authentication credentials
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        '403':
+          description: Authorization failed due to insufficient permissions
+          schema:
+            $ref: '#/definitions/MessageResponse'
+
+  /*:
+    get:
+      tags: 
+        - Miscellaneous
+      summary: Any invalid URL
+      description: Any URL which doesn't match the above paths will be handled by this
+      operationId: GetInvalidURL
+      responses: 
+        '404':
+          description: Resource not found
+          schema:
+            $ref: "#/definitions/MessageResponse"
+    post: 
+      tags:
+        - Miscellaneous
+      summary: Any invalid URL
+      description: Any URL which doesn't match the above paths will be handled by this
+      operationId: PostInvalidURL
+      responses:
+        '404':
+          description: Resource not found
+          schema: 
+            $ref: "#/definitions/MessageResponse"  
+    put: 
+      tags:
+        - Miscellaneous
+      summary: Any invalid URL
+      description: Any URL which doesn't match the above paths will be handled by this
+      operationId: PutInvalidURL
+      responses:
+        '404':
+          description: Resource not found
+          schema: 
+            $ref: "#/definitions/MessageResponse"  
+    delete: 
+      tags:
+        - Miscellaneous
+      summary: Any invalid URL
+      description: Any URL which doesn't match the above paths will be handled by this
+      operationId: DeleteInvalidURL
+      responses:
+        '404':
+          description: Resource not found
+          schema: 
+            $ref: "#/definitions/MessageResponse"  
+
+definitions:
+  Epic:
+    type: object
+    properties:
+      epicID:
+        description: Unique ID for each Epic in the Backlog (must contain EP as prefix)
+        type: string
+        example: EP714
+      epicInfo:
+        description: Overview of feature/change to be implemented
+        type: string
+        example: The customer interactive chat has to be revamped
+  
+  UserStory:
+    type: object
+    properties:
+      storyID:
+        description: Unique ID for each User Story (must contain US as prefix)
+        type: string
+        example: US824
+      storyDetails:
+        description: Specific feature/change to be implemented
+        type: string
+        example: An option to upload images and files must be included in the customer interactive chat
+      epicID:
+        description: Corresponding epicID to which this USER Story belongs
+        type: string
+        example: EP714
+      status:
+        description: Current status indicator of the User Story. 
+        type: string
+        example: Assigned
+        enum:
+          - Ready
+          - Assigned
+          - In Progress
+          - Done
+          - Tested
+      module:
+        description: The particular module to which this User Story is related to
+        type: string
+        example: Database
+        enum:
+          - API
+          - Database
+          - UI/UX
+          - Testing
+          - Analytics
+
+
+  Product:
+    type: object
+    properties:
+      productSKU:
+        description: Unique Identifier for the Product
+        type: string
+        example: 23ab34c3
+      name:
+        description: Name of the Product
+        type: string
+        example: "Ballpoint Pen"
+      categoryID:
+        description: ID of the category product belongs to
+        type: integer
+        example: 2
+      keywords:
+        description: An array of keywords to facilitate searching 
+        type: array
+        items: 
+          type: string
+      brand:
+        description: Name of the brand
+        type: string
+        example: "Samsung"
+      color:
+        description: Color of the item
+        type: string
+        example: "Red"
+      Warranty:
+        description: Warranty offered
+        type: string
+        example: 6 months
+        enum:
+          - 1 year
+          - 6 months
+          - 3 months
+          - None
+      basePrice:
+        description: Base selling price of the item
+        type: number
+        example: 42
+        minimum: 0
+      taxCategoryID:
+        description: Tax Category ID for GST calculation
+        type: integer
+        example: 1
+      imageURLs:
+        description: An array of URLs where the images of the product are hosted
+        type: array
+        items:
+          type: string
+      stock:
+        description: The current number of items available in stock
+        type: integer
+        example: 200
+        minimum: 0
+      status:
+        description: Current status of the product (if available for purchasing)
+        type: string
+        example: live
+        enum:
+          - live
+          - pending
+          - draft
+  
+  Category:
+    type: object
+    properties:
+      categoryID:
+        description: Unique Identifier for the Category
+        type: integer
+        example: 1
+      name:
+        description: Name of the Category
+        type: string
+        example: "Writing Tools"
+      parentCategoryID:
+        description: Category ID of its parent category. Leave blank for no parent
+        type: integer
+
+  Client:
+    type: object
+    properties:
+      clientID:
+        description: Unique Identifier for the Client
+        type: integer
+        example: 3
+      name:
+        description: Name of the Client/Business
+        type: string
+        example: "Novissimo"
+      email:
+        description: Email address of the Client
+        type: string
+        example: "novissimo@hotmail.com"
+
+  ProductFilter:
+    type: object
+    properties:
+      keywords:
+        description: An array of keywords to facilitate searching 
+        type: array
+        items: 
+          type: string
+          example:
+          - "Mobile"
+          - "Laptop"
+          - "BestSeller"
+      brand:
+        description: Name of the brand
+        type: array
+        items: 
+          type: string
+          example: 
+          - "Samsung"
+          - "Apple"
+      color:
+        description: Color of the item
+        type: array
+        items: 
+          type: string
+          example: 
+          - "Red"
+          - "Blue"
+          - "Purple"
+      Warranty:
+        description: Warranty offered
+        type: array
+        items: 
+          type: string
+          example: 6 months
+          enum:
+            - 1 year
+            - 6 months
+            - 3 months
+            - None
+      status:
+        description: Current status of the product (if available for purchasing)
+        type: array
+        items: 
+          type: string
+          example: live
+          enum:
+            - live
+            - pending
+            - draft
+  
+  PriceBreakdown:
+    type: object
+    properties:
+      basePrice:
+        description: Base price of the product
+        type: number
+        example: 10
+      discountRate:
+        description: Discount rate applied on the product
+        type: number
+        example: 0.2
+      taxableAmount:
+        description: Price of the product, after discount and before applying tax
+        type: number
+        example: 8
+      taxRate:
+        description: Tax rate applied on the product
+        type: number
+        example: 0.1
+      finalPrice:
+        description: Final price of the product
+        type: number
+        example: 8.8
+  
+  MessageResponse:
+    type: object
+    properties:
+      status:
+        type: string
+      message:
+        type: string
+schemes:
+  - https
+  - http
